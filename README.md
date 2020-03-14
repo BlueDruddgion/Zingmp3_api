@@ -58,7 +58,7 @@ Zingmp3 - A tool crawl data from [`zingmp3.vn`](https://zingmp3.vn/) or [`mp3.zi
     ```
  
 ## ***How to get cookies.txt for login***
- If you want to use your account VIP to download quality list 320 or lossless
+ If you want to use your account VIP to download quality like lossless ....
  
  1. Download extension from chrome store [`cookies.txt`](https://chrome.google.com/webstore/detail/cookiestxt/njabckikapfpffapmjgojcnbfjonfjfg)
  2. Go to page [`zingmp3`](https://zingmp3.vn/)
