@@ -62,10 +62,10 @@ class ProgressBar(object):
         if secs == 0:
             eta = "\n"
 
-        self._progress(_receiving, _total_size, file_size=str(_size) + str(suffix_size), \
-                       downloaded=str(_received) + str(suffix_recvd), \
-                       rate=str(rate) + str(suffix_rate), \
-                       suffix=str(eta), \
+        self._progress(_receiving, _total_size, file_size=str(_size) + str(suffix_size),
+                       downloaded=str(_received) + str(suffix_recvd),
+                       rate=str(rate) + str(suffix_rate),
+                       suffix=str(eta),
                        ver=ver,
                        video_time=video_time,
                        ts_time=ts_time

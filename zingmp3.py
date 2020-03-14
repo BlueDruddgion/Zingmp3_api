@@ -1,12 +1,53 @@
 from setup import *
 
 
+class authentication():
+    def __init__(self, path_cookies='', username='', password=''):
+        self._path_cookies = path_cookies
+        self._username = username
+        self._password = password
+        self._headers = HEADERS
+        self.session = session
+
+    def auth_with_cookies(self):
+        file = open(self._path_cookies, 'r', encoding='utf-8')
+        cookies = {}
+        out = ''
+        for line in file:
+            line = line.strip()
+            if '#' not in line:
+                item = re.findall(r'[0-9]\s(.*)', line)
+                if item:
+                    item = item[0].split('\t')
+                    if len(item) == 1:
+                        cookies[item[0]] = ''
+                        out += "%s=''; " % item[0]
+                    else:
+                        cookies[item[0]] = item[1]
+        self.session.cookies.update(cookies)
+        res = self.session.get(url='https://accounts.zingmp3.vn/account/userprofile', headers={
+            'user-agent': "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) coc_coc_browser/85.0.134 Chrome/79.0.3945.134 Safari/537.36",
+            "sec-fetch-site": "same-site",
+            'sec-fetch-mode': "cors",
+            'referer': "https://zingmp3.vn/",
+        })
+        info = res.json()
+        name = try_get(info, lambda x: x.get('data').get('info').get('name'))
+        if not name:
+            sys.stdout.write(
+                fc + sd + "\n[" + fr + sb + "-" + fc + sd + "] : " + fr + sd + "Cookies die, pls try again.\n")
+            sys.exit(0)
+        return True
+
+
 class extractZingMp3(ProgressBar):
     def __init__(self, *args, **kwargs):
         self._url = kwargs.get('url')
         self._show_json_info = kwargs.get('show_json_info')
         self._down_lyric = kwargs.get('down_lyric')
         self._down_media = kwargs.get('down_media')
+        self._is_login = kwargs.get('is_login')
+        self._quality = kwargs.get('quality')
         self._path_save = kwargs.get('path_save') or os.getcwd()
         self._headers = HEADERS
         self._regex_url = '''(?x)^
@@ -14,13 +55,13 @@ class extractZingMp3(ProgressBar):
         (?P<site>
             (?:(zingmp3\.vn)|   
             (mp3\.zing\.vn))
-        )\/                                                        # check domain (zingmp3 and mp3.zing.vn)
-        (
-            (?P<type>bai-hat|album|video-clip|playlist|embed)\/    # get type (bai-hat, album,video-clip, playlist)
-            (?P<slug>.*?)\/                                        # get slug of media
-            (?P<id>.*?)(?:$|\W)                                    # get id of media
-            |                                                      # if not media url, url is artist's profile url or chart url
-            (?:nghe-si\/|)(?P<name>.*?)\/                          # get name artits or get name chart
+        )\/                                                           # check domain (zingmp3 and mp3.zing.vn)
+        (   
+            (?P<type>bai-hat|album|video-clip|playlist|embed)\/       # get type (bai-hat, album,video-clip, playlist)
+            (?P<slug>.*?)\/                                           # get slug of media
+            (?P<id>.*?)(?:$|\W)                                       # get id of media
+            |                                                         # if not media url, url is artist's profile url or chart url
+            (?:nghe-si\/|)(?P<name>.*?)\/                             # get name artits or get name chart
             (?P<slug_name>.*?)(?:$|\.|\/(?P<id_name>.*?)(?:$|\W))     # get artist's slug or get chart slug
         )
         '''
@@ -224,8 +265,16 @@ class extractZingMp3(ProgressBar):
 
             api = self.get_api(name_api, video_id)
             data = get_req(url=api, headers=self._headers, type='json')
-            if not data:
-                return 'null'
+
+            if type == 'bai-hat' and self._is_login:
+                # get 123 and 320 and lossless
+                api2 = self.get_api(name_api='/download/get-streamings', video_id=video_id)
+                res = session.get(url=api2, headers=self._headers)
+                data2 = res.json()
+                if not data or not data2:
+                    return "null"
+                data['data']['streaming']['default'] = data2.get('data')
+
             f = data
 
         if self._show_json_info:
@@ -249,42 +298,62 @@ class extractZingMp3(ProgressBar):
                 label: url.
             }
             Ex: {
-                    360p: https://.....
-                    720p: https://.....
-                    1080p: https://.....
+                    360p:      https://.....
+                    720p:      https://.....
+                    1080p:     https://.....
                 } or
                 {
-                    128: https://.....
-                    320: https://.....
+                    128:       https://.....
+                    320:       https://.....
+                    lossless:  https://.....
                 }
-            :return: url and label
+            :return: url and label and ext
             """
             keys = list(source.keys())
             while True:
                 if not keys:
                     break
                 label_best = keys[-1]
-                url = source[label_best]
-                if url:
-                    return url, label_best
+                try:
+                    if self._quality:
+                        url = source[self._quality]
+                        if url:
+                            ext = search_regex(r'(?x).*\.(\w+)', url)
+                            if ext not in KNOWN_EXTENSIONS:
+                                ext = 'mp3'
+                            return url, self._quality, ext
+                    else:
+                        # if not quality => get best quality of video
+                        url = source[label_best]
+                        if url:
+                            ext = search_regex(r'(?x).*\.(\w+)', url)
+                            if ext not in KNOWN_EXTENSIONS:
+                                ext = 'mp3'
+                            return url, label_best, ext
+                except:
+                    pass
                 keys.remove(label_best)
-            return None, None
+            sys.stdout.write(
+                fg + '[' + fc + '*' + fg + f'''] : Quality {self._quality} don't have in this media, just have {
+                list(source.keys())
+                }.\n''')
+            return None, None, None
 
         def down_media():
             """
             - Download media.
             :return:
             """
-            url, label_best = get_best_label_video(sources)
+            url, label_best, ext = get_best_label_video(sources)
             if not url:
-                sys.stdout.write(fg + '[' + fr + '*' + fg + f"] : {title} don't have media.")
+                sys.stdout.write(fg + '[' + fr + '*' + fg + f"] : {title} don't have media.\n")
                 return
             if not url.startswith('http') or not url.startswith('https'):
                 url = 'https:' + url
             sys.stdout.write(fg + '[' + fc + '*' + fg + f'] : Downloading {title} - {label_best} .\n')
             down = Downloader(url=url)
             down.download(
-                filepath='%s/%s_%s.mp3' % (path_download, title, label_best),
+                filepath='%s/%s_%s.%s' % (path_download, title, label_best, ext),
                 callback=self.show_progress
             )
             sys.stdout.write('\n')
@@ -316,15 +385,20 @@ class extractZingMp3(ProgressBar):
             sys.stdout.write('\n')
             return
 
+        title = f.get('title') or data.get('title') or data.get('alias')
+        sys.stdout.write(fg + '[' + fc + '*' + fg + f'] :   {title} .\n')
+        title = removeCharacter_filename(title)
+
         if not data:  # video-clip
-            title = f.get('title')
-            title = removeCharacter_filename(title)
-            sys.stdout.write(fg + '[' + fc + '*' + fg + f'] : Downloading {title} .\n')
+            # title = f.get('title')
+            # title = removeCharacter_filename(title)
             source = try_get(f, lambda x: x['source'])
-            url, label_best = get_best_label_video(source)
+            url, label_best, ext = get_best_label_video(source)
             if not url:
-                sys.stdout.write(fg + '[' + fr + '*' + fg + f"] : {title} don't have video.")
+                sys.stdout.write(fg + '[' + fr + '*' + fg + f"] : {title} don't have video.\n\n")
+                time.sleep(5)
                 return
+            sys.stdout.write(fg + '[' + fc + '*' + fg + f'] : Downloading {title} .\n')
             path_download = os.path.join(self._path_save, 'DOWNLOAD')
             if not os.path.exists(path=path_download):
                 os.mkdir(path_download)
@@ -338,12 +412,8 @@ class extractZingMp3(ProgressBar):
             sys.stdout.write('\n\n')
             return
 
-        title = data.get('title') or data.get('alias')
-        sys.stdout.write(fg + '[' + fc + '*' + fg + f'] :   {title} .\n')
-        title = removeCharacter_filename(title)
         lyric = data.get('lyric') or try_get(data, lambda x: x['lyrics'][0]['content'])
-        sources = try_get(data,
-                          lambda x: x['streaming']['default'] if x['streaming']['msg'].lower() == 'success' else None)
+        sources = try_get(data, lambda x: x['streaming']['default'])
 
         if not sources:
             song_items = try_get(data, lambda x: x['song']['items'])
@@ -425,6 +495,21 @@ class extractZingMp3(ProgressBar):
             }
             return url + get_request_path(data)
 
+        def get_api_download(id):
+            url = f"https://download.zingmp3.vn/api{name_api}?id={id}&"
+            time = str(int(datetime.datetime.now().timestamp()))
+            sha256 = get_hash256(f"ctime={time}id={id}")
+
+            data = {
+                'ctime': time,
+                'api_key': API_KEY,
+                'sig': get_hmac512(f"{name_api}{sha256}")
+            }
+            return url + get_request_path(data)
+
+        if 'download' in name_api:
+            return get_api_download(id=video_id)
+
         if video_id:
             return get_api_by_id(video_id)
         if type:
@@ -437,24 +522,40 @@ class extractZingMp3(ProgressBar):
 def main(argv):
     parser = argparse.ArgumentParser(description='Zingmp3 - A tool crawl data from zingmp3.vn .')
     parser.add_argument('url', type=str, help='Url.')
-    parser.add_argument('-s', '--save', type=str, default=os.getcwd(), help='Path to save', dest='path_save')
-    parser.add_argument('-j', '--json', default=False, action='store_true', help="Show json of info media.",
-                        dest='show_json_info')
-    parser.add_argument('-l', '--only-lyric', default=False, action='store_true', help='Download only lyric.',
-                        dest='down_lyric')
-    parser.add_argument('-m', '--only-media', default=False, action='store_true', help='Download only media.',
-                        dest='down_media')
-    args = parser.parse_args()
 
-    if args.url:
-        extract = extractZingMp3(
-            url=args.url,
-            path_save=args.path_save,
-            show_json_info=args.show_json_info,
-            down_lyric=args.down_lyric,
-            down_media=args.down_media
-        )
-        extract.run()
+    authen = parser.add_argument_group('Authentication')
+    authen.add_argument('-c', '--cookies', dest='path_cookies', type=str, help='Cookies for authenticate with.',
+                        metavar='')
+
+    opts = parser.add_argument_group("Options")
+    opts.add_argument('-q', '--quality', type=str, help='Set quality want to download.', dest='quality', metavar='')
+    opts.add_argument('-s', '--save', type=str, default=os.getcwd(), help='Path to save', dest='path_save', metavar='')
+    opts.add_argument('-j', '--json', default=False, action='store_true', help="Show json of info media.",
+                      dest='show_json_info')
+    opts.add_argument('-l', '--only-lyric', default=False, action='store_true', help='Download only lyric.',
+                      dest='down_lyric')
+    opts.add_argument('-m', '--only-media', default=False, action='store_true', help='Download only media.',
+                      dest='down_media')
+
+    args = parser.parse_args()
+    status_auth = False
+    if args.path_cookies:
+        auth = authentication(path_cookies=args.path_cookies)
+        status_auth = auth.auth_with_cookies()
+        if status_auth:
+            sys.stdout.write(fg + '[' + fc + '*' + fg + '] : Login oki.\n')
+        else:
+            sys.stdout.write(fg + '[' + fc + '*' + fg + '] : Login false.\n')
+    extract = extractZingMp3(
+        url=args.url,
+        path_save=args.path_save,
+        show_json_info=args.show_json_info,
+        down_lyric=args.down_lyric,
+        down_media=args.down_media,
+        is_login=status_auth,
+        quality=args.quality
+    )
+    extract.run()
 
 
 if __name__ == '__main__':

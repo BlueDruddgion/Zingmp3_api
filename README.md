@@ -1,5 +1,5 @@
 # ***Zingmp3***
-Zingmp3 - A tool crawl data from [`zingmp3.vn`](https://zingmp3.vn/) use api.
+Zingmp3 - A tool crawl data from [`zingmp3.vn`](https://zingmp3.vn/) or [`mp3.zing.vn`](https://mp3.zing.vn/) (use api).
 
 [![Capture.png](https://i.postimg.cc/Nf6Hx9nL/Capture.png)](https://postimg.cc/CzK5h1SV)
 
@@ -13,11 +13,14 @@ Zingmp3 - A tool crawl data from [`zingmp3.vn`](https://zingmp3.vn/) use api.
     ``` 
     
 ## ***Options***
+  - `-c` or `--cookies`: Add cookies to auth
+  - `-q` or `--quality` : Set quality want to download like ( 128,320,lossless for 'bai-hat' ) or ( 360,480,720,1080 for 'video' )
   - `-j` or `json` : Show json of info media. 
   - `-s` or `--save` : Path to save file downloaded.
   - `-l` or `--only-lyric` : Download only lyric.
   - `-m` or `--only-media` : Download only media.
   - Default will download all media and lyric.
+  - All the example in Usage.
  
 ## ***All URL Supported***
 - **url media**
@@ -54,8 +57,20 @@ Zingmp3 - A tool crawl data from [`zingmp3.vn`](https://zingmp3.vn/) use api.
     https://zingmp3.vn/top-new-release/index.html
     ```
  
+## ***How to get cookies.txt for login***
+ If you want to use your account VIP to download quality list 320 or lossless
+ 
+ 1. Download extension from chrome store [`cookies.txt`](https://chrome.google.com/webstore/detail/cookiestxt/njabckikapfpffapmjgojcnbfjonfjfg)
+ 2. Go to page [`zingmp3`](https://zingmp3.vn/)
+ 3. Click to icon cookies.txt just download
+ 4. Click to `click here` and save file cookies.txt
+ 5. Get cookies.txt then put it to them same path with tool, then run
+ 
+ Sometime cookies will die, Pls follow the steps above to update the new cookies.
+  
+ If you don't set cookies, tool will download default quality like 128 ...
 ## ***Usage***
-[![Capture.png](https://i.postimg.cc/0NLFxB0t/Capture.png)](https://postimg.cc/zLF0FpMW)
+[![Capture.png](https://i.postimg.cc/9XBjGGMF/Capture.png)](https://postimg.cc/K44Vb3Bd)
  - **Install module**
     ```
     pip install -r requirements.txt
@@ -64,6 +79,28 @@ Zingmp3 - A tool crawl data from [`zingmp3.vn`](https://zingmp3.vn/) use api.
     ```
     python zingmp3.py https://zingmp3.vn/bai-hat/Khoc-Cung-Em-Mr-Siro-Gray-Wind/ZWBI0DFI.html
     ``` 
+ - **Download with cookies**
+  
+    ```
+    python zingmp3.py -c cookies.txt https://zingmp3.vn/bai-hat/Khoc-Cung-Em-Mr-Siro-Gray-Wind/ZWBI0DFI.html
+    ```
+ - **Set quality want download**
+ 
+    No cookies
+    ```
+    python zingmp3.py -q lossless https://zingmp3.vn/bai-hat/Khoc-Cung-Em-Mr-Siro-Gray-Wind/ZWBI0DFI.html
+    ```
+    
+    with cookies
+    ```
+    python zingmp3.py -c cookies.txt -q lossless https://zingmp3.vn/bai-hat/Khoc-Cung-Em-Mr-Siro-Gray-Wind/ZWBI0DFI.html
+    ```
+    
+    Video
+    ```
+    python zingmp3.py -q 1080 https://zingmp3.vn/video-clip/Em-Gi-Oi-Jack-K-ICM/ZWAEFWIF.html
+    ```
+    
  - **Show json of info media**
      ```
      python zingmp3.py -j https://zingmp3.vn/bai-hat/Khoc-Cung-Em-Mr-Siro-Gray-Wind/ZWBI0DFI.html
@@ -235,3 +272,4 @@ Zingmp3 - A tool crawl data from [`zingmp3.vn`](https://zingmp3.vn/) use api.
 - All file downloaded in folder DOWNLOAD at the same path
 - If there's an error or problem, please write issue out here
  [`zingmp3 issues`](https://github.com/hatienl0i261299/Zingmp3_api/issues)
+- FB: 100011734236090

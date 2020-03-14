@@ -8,6 +8,20 @@ session = requests.Session()
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.97 Safari/537.36',
 }
+KNOWN_EXTENSIONS = [
+    'mp4', 'm4a', 'm4p', 'm4b', 'm4r', 'm4v', 'aac',
+    'flv', 'f4v', 'f4a', 'f4b',
+    'webm', 'ogg', 'ogv', 'oga', 'ogx', 'spx', 'opus',
+    'mkv', 'mka', 'mk3d',
+    'avi', 'divx',
+    'mov',
+    'asf', 'wmv', 'wma',
+    '3gp', '3g2',
+    'mp3',
+    'flac',
+    'ape',
+    'wav',
+    'f4f', 'f4m', 'm3u8', 'smil']
 
 
 def duration_to_length(duration):
