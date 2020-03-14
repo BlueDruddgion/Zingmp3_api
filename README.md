@@ -14,7 +14,7 @@ Zingmp3 - A tool crawl data from [`zingmp3.vn`](https://zingmp3.vn/) or [`mp3.zi
     
 ## ***Options***
   - `-c` or `--cookies`: Add cookies to auth
-  - `-q` or `--quality` : Set quality want to download like ( 128,320,lossless for 'bai-hat' ) or ( 360,480,720,1080 for 'video' )
+  - `-q` or `--quality` : Quality want to download like( 128,320,lossless for 'bai-hat' ) or ( 360,480,720,1080 for 'video' )
   - `-j` or `json` : Show json of info media. 
   - `-s` or `--save` : Path to save file downloaded.
   - `-l` or `--only-lyric` : Download only lyric.
